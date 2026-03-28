@@ -1,4 +1,4 @@
-class_name PluginSettings
+class_name HasturOperationGDPluginSettings
 
 
 static func register_settings() -> void:

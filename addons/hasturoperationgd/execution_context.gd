@@ -7,7 +7,7 @@ var _max_output_length: int = 800
 
 
 func _init() -> void:
-	_max_output_length = PluginSettings.get_output_max_char_length()
+	_max_output_length = HasturOperationGDPluginSettings.get_output_max_char_length()
 
 
 func output(key: String, value: String) -> void:
