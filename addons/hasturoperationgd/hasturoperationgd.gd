@@ -2,21 +2,28 @@
 extends EditorPlugin
 
 
+var _dock: EditorDock
+
+
 func _enable_plugin() -> void:
-	# Add autoloads here.
 	pass
 
 
 func _disable_plugin() -> void:
-	# Remove autoloads here.
 	pass
 
 
 func _enter_tree() -> void:
-	# Initialization of the plugin goes here.
-	pass
+	_dock = EditorDock.new()
+	_dock.title = "Hastur Executor"
+	_dock.default_slot = EditorDock.DOCK_SLOT_LEFT_UL
+	_dock.available_layouts = EditorDock.DOCK_LAYOUT_VERTICAL | EditorDock.DOCK_LAYOUT_FLOATING
+	var dock_content = preload("executor_dock.gd").new()
+	_dock.add_child(dock_content)
+	add_dock(_dock)
 
 
 func _exit_tree() -> void:
-	# Clean-up of the plugin goes here.
-	pass
+	remove_dock(_dock)
+	_dock.queue_free()
+	_dock = null
