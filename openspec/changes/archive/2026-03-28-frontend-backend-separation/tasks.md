@@ -31,9 +31,9 @@
 
 ## 4. Verify and Test
 
-- [ ] 4.1 Verify plugin loads without errors and dock panel displays correctly
-- [ ] 4.2 Verify local code execution works through the backend
-- [ ] 4.3 Verify broker connection status updates in the dock via backend signals
-- [ ] 4.4 Verify remote execution from broker-server is received and executed by the backend
-- [ ] 4.5 Verify execution history displays correctly and is sourced from the backend
-- [ ] 4.6 Verify plugin cleanup frees backend and disconnects broker client properly
+- [x] 4.1 Verify plugin loads without errors and dock panel displays correctly
+- [x] 4.2 Verify local code execution works through the backend
+- [x] 4.3 Verify broker connection status updates in the dock via backend signals
+- [x] 4.4 Verify remote execution from broker-server is received and executed by the backend
+- [x] 4.5 Verify execution history displays correctly and is sourced from the backend
+- [x] 4.6 Verify plugin cleanup frees backend and disconnects broker client properly
