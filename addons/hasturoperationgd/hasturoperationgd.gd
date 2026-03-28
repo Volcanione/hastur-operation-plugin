@@ -25,6 +25,12 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
+	if _dock:
+		var dock_content = _dock.get_child(0)
+		if dock_content and dock_content.has_method("_get_broker_client"):
+			var broker_client = dock_content._get_broker_client()
+			if broker_client:
+				broker_client.disconnect_client()
 	remove_dock(_dock)
 	_dock.queue_free()
 	_dock = null
