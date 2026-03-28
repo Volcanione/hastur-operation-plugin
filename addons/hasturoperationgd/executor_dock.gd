@@ -4,25 +4,17 @@ extends Control
 
 var _code_edit: CodeEdit
 var _result_edit: CodeEdit
-var _executor: GDScriptExecutor
 var _status_label: Label
 var _id_label: LineEdit
 var _history_list: ItemList
-var _history: Array = []
-var _max_history: int = 50
-var _broker_client: BrokerClient
+var _backend: ExecutorBackend
+
+
+func initialize(backend: ExecutorBackend) -> void:
+	_backend = backend
 
 
 func _ready() -> void:
-	_executor = GDScriptExecutor.new()
-
-	var broker_host = HasturOperationGDPluginSettings.get_broker_host()
-	var broker_port = HasturOperationGDPluginSettings.get_broker_port()
-	_broker_client = BrokerClient.new(broker_host, broker_port)
-	_broker_client.connection_established.connect(_on_connection_established)
-	_broker_client.connection_lost.connect(_on_connection_lost)
-	_broker_client.remote_execution_completed.connect(_on_remote_execution)
-
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(vbox)
@@ -83,20 +75,17 @@ func _ready() -> void:
 
 	vbox.add_child(history_vbox)
 
-
-func _process(delta: float) -> void:
-	if _broker_client:
-		_broker_client.poll(delta)
+	if _backend:
+		_backend.connection_state_changed.connect(_on_connection_state_changed)
+		_backend.execution_completed.connect(_on_execution_completed)
+		_backend.history_cleared.connect(_on_history_cleared)
 
 
 func _on_execute_pressed() -> void:
+	if not _backend:
+		return
 	var code = _code_edit.text
-	var start_time = Time.get_ticks_msec()
-	var result = _executor.execute_code(code)
-	var end_time = Time.get_ticks_msec()
-	var duration_ms = end_time - start_time
-	_display_result(result)
-	_add_history(code, result, duration_ms, "local")
+	_backend.execute_code(code)
 
 
 func _display_result(result: Dictionary) -> void:
@@ -125,37 +114,31 @@ func _display_result(result: Dictionary) -> void:
 	_result_edit.text = text
 
 
-func _on_connection_established(id: String) -> void:
-	_status_label.text = "Connected"
-	_status_label.add_theme_color_override("font_color", Color.GREEN)
-	_id_label.text = "ID: " + id
-	_id_label.visible = true
+func _on_connection_state_changed(connected: bool, executor_id: String) -> void:
+	if connected:
+		_status_label.text = "Connected"
+		_status_label.add_theme_color_override("font_color", Color.GREEN)
+		_id_label.text = "ID: " + executor_id
+		_id_label.visible = true
+	else:
+		_status_label.text = "Disconnected"
+		_status_label.add_theme_color_override("font_color", Color.RED)
+		_id_label.text = ""
+		_id_label.visible = false
 
 
-func _on_connection_lost() -> void:
-	_status_label.text = "Disconnected"
-	_status_label.add_theme_color_override("font_color", Color.RED)
-	_id_label.text = ""
-	_id_label.visible = false
-
-
-func _add_history(code: String, result: Dictionary, duration_ms: int, source: String) -> void:
-	var entry = {
-		"code": code,
-		"result": result,
-		"timestamp": Time.get_time_string_from_system(),
-		"duration_ms": duration_ms,
-		"source": source
-	}
-	_history.append(entry)
-	if _history.size() > _max_history:
-		_history.pop_front()
+func _on_execution_completed(entry: Dictionary) -> void:
+	if entry.source == "local":
+		_display_result(entry.result)
 	_refresh_history_list()
 
 
 func _refresh_history_list() -> void:
+	if not _backend:
+		return
 	_history_list.clear()
-	for entry in _history:
+	var history = _backend.get_history()
+	for entry in history:
 		var preview = entry.code.split("\n")[0]
 		if preview.length() > 60:
 			preview = preview.substr(0, 60) + "..."
@@ -170,21 +153,20 @@ func _refresh_history_list() -> void:
 
 
 func _on_history_selected(index: int) -> void:
-	if index < 0 or index >= _history.size():
+	if not _backend:
 		return
-	var entry = _history[index]
+	var history = _backend.get_history()
+	if index < 0 or index >= history.size():
+		return
+	var entry = history[index]
 	_code_edit.text = entry.code
 	_display_result(entry.result)
 
 
 func _on_clear_history() -> void:
-	_history.clear()
+	if _backend:
+		_backend.clear_history()
+
+
+func _on_history_cleared() -> void:
 	_history_list.clear()
-
-
-func _on_remote_execution(code: String, result: Dictionary, duration_ms: int) -> void:
-	_add_history(code, result, duration_ms, "remote")
-
-
-func _get_broker_client() -> BrokerClient:
-	return _broker_client
