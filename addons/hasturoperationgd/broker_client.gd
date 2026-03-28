@@ -38,10 +38,13 @@ func _init(host: String, port: int) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE:
-		disconnect_client()
-		if _executor:
-			_executor = null
+	if what == NOTIFICATION_PREDELETE and _tcp != null:
+		if _tcp:
+			_tcp.disconnect_from_host()
+		_connected = false
+		_executor_id = ""
+		_buffer = ""
+		_executor = null
 
 
 func disconnect_client() -> void:

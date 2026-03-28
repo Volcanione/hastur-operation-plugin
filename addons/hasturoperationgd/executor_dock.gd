@@ -3,10 +3,10 @@ extends Control
 
 
 var _code_edit: CodeEdit
-var _result_label: RichTextLabel
+var _result_edit: CodeEdit
 var _executor: GDScriptExecutor
 var _status_label: Label
-var _id_label: Label
+var _id_label: LineEdit
 var _history_list: ItemList
 var _history: Array = []
 var _max_history: int = 50
@@ -33,11 +33,14 @@ func _ready() -> void:
 	_status_label.add_theme_color_override("font_color", Color.RED)
 	status_bar.add_child(_status_label)
 
-	_id_label = Label.new()
+	_id_label = LineEdit.new()
 	_id_label.text = ""
 	_id_label.visible = false
+	_id_label.editable = false
 	_id_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_id_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_id_label.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_id_label.custom_minimum_size = Vector2(200, 0)
+	_id_label.tooltip_text = "Click and Ctrl+C to copy"
 	status_bar.add_child(_id_label)
 	vbox.add_child(status_bar)
 
@@ -51,11 +54,12 @@ func _ready() -> void:
 	button.pressed.connect(_on_execute_pressed)
 	vbox.add_child(button)
 
-	_result_label = RichTextLabel.new()
-	_result_label.custom_minimum_size = Vector2(0, 100)
-	_result_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_result_label.bbcode_enabled = true
-	vbox.add_child(_result_label)
+	_result_edit = CodeEdit.new()
+	_result_edit.custom_minimum_size = Vector2(0, 100)
+	_result_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_result_edit.editable = false
+	_result_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	vbox.add_child(_result_edit)
 
 	var history_vbox = VBoxContainer.new()
 	history_vbox.custom_minimum_size = Vector2(0, 100)
@@ -118,7 +122,7 @@ func _display_result(result: Dictionary) -> void:
 		for entry in result.outputs:
 			text += str(entry[0]) + ": " + str(entry[1]) + "\n"
 
-	_result_label.text = text
+	_result_edit.text = text
 
 
 func _on_connection_established(id: String) -> void:
