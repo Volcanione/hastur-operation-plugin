@@ -22,7 +22,7 @@ func _enter_tree() -> void:
 
 	_dock = EditorDock.new()
 	_dock.title = "Hastur Executor"
-	_dock.default_slot = EditorDock.DOCK_SLOT_LEFT_UL
+	_dock.default_slot = EditorDock.DOCK_SLOT_RIGHT_UL
 	_dock.available_layouts = EditorDock.DOCK_LAYOUT_VERTICAL | EditorDock.DOCK_LAYOUT_FLOATING
 	var dock_content = preload("executor_dock.gd").new()
 	dock_content.initialize(_backend)

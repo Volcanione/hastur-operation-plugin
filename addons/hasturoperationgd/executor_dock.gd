@@ -139,17 +139,21 @@ func _refresh_history_list() -> void:
 	_history_list.clear()
 	var history = _backend.get_history()
 	for entry in history:
-		var preview = entry.code.split("\n")[0]
-		if preview.length() > 60:
-			preview = preview.substr(0, 60) + "..."
 		var status_str = "OK"
 		if not entry.result.get("compile_success", false):
 			status_str = "FAIL"
 		elif not entry.result.get("run_success", false):
 			status_str = "FAIL"
 		var source_str = entry.source
-		var display = "%s [%s] %s - %dms (%s)" % [preview, status_str, entry.timestamp, entry.duration_ms, source_str]
-		_history_list.add_item(display)
+		var display = "[%s] %s - %dms (%s)" % [status_str, entry.timestamp, entry.duration_ms, source_str]
+		var idx = _history_list.add_item(display)
+		if status_str == "OK":
+			_history_list.set_item_custom_fg_color(idx, Color.GREEN)
+		else:
+			_history_list.set_item_custom_fg_color(idx, Color.RED)
+	if _history_list.item_count > 0:
+		_history_list.select(_history_list.item_count - 1)
+		_history_list.ensure_current_is_visible()
 
 
 func _on_history_selected(index: int) -> void:
