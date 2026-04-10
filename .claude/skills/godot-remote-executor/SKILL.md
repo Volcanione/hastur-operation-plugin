@@ -103,7 +103,7 @@ When the user's task requires targeting the game runtime (`type: "game"`) but no
 **1. Check if the game is currently running** — Execute code on the editor to inspect the game process state:
 
 ```gdscript
-var ei = Engine.get_singleton('EditorInterface')
+var ei = executeContext.editor_plugin.get_editor_interface()
 var is_playing = ei.is_playing_scene()
 executeContext.output("is_playing", str(is_playing))
 ```
@@ -145,16 +145,16 @@ Look for an entry containing `game_executor` or `GameExecutor` in the autoload d
   		executeContext.output("status", "Failed to save project settings: error " + str(err))
   ```
 
-- **To start the game**, execute on the editor using the Debug menu:
+- **To start the game**, execute on the editor:
   ```gdscript
-  var ei = Engine.get_singleton('EditorInterface')
+  var ei = executeContext.editor_plugin.get_editor_interface()
   ei.play_main_scene()
   ```
   Or trigger via the menu bar's Debug menu if more control is needed.
 
-- **To stop the game:**
+  - **To stop the game:**
   ```gdscript
-  var ei = Engine.get_singleton('EditorInterface')
+  var ei = executeContext.editor_plugin.get_editor_interface()
   ei.stop_playing_scene()
   ```
 
@@ -385,6 +385,7 @@ For complex tasks, follow this iterative pattern:
 The `executeContext` object has these characteristics:
 - `output(key: String, value: String)` — call this to return data. Both arguments should be strings. The value is truncated if it exceeds the configured max char length (default 800).
 - Output values that exceed the limit are truncated with a warning prefix
+- `editor_plugin` — holds a reference to the `EditorPlugin` instance (the Hastur plugin itself). This is only available when executing on the **editor** executor; it is `null` on the game executor. Use this to call EditorPlugin APIs such as `get_editor_interface()`, `get_undo_redo()`, `make_visible()`, etc.
 
 ### Prefer Triggering Editor Menu Actions (Important)
 
@@ -393,7 +394,7 @@ When the user's request corresponds to an action that exists in the Godot editor
 For example, to save the scene, don't call `ResourceSaver.save()` or `EditorInterface.save_scene()` — instead, emit the `id_pressed` signal on the Scene menu's PopupMenu. The menu bar is accessible via:
 
 ```gdscript
-var ei = Engine.get_singleton('EditorInterface')
+var ei = executeContext.editor_plugin.get_editor_interface()
 var menu_bar = ei.get_base_control().get_child(0).get_child(0).get_child(0)
 var scene_menu = menu_bar.get_child(0) as PopupMenu
 var save_item_id = scene_menu.get_item_id(6)
@@ -426,7 +427,8 @@ Use this pattern for: saving scenes, opening scenes, undo/redo, export, closing 
 
 Code runs inside the Godot editor as a `@tool` script. This means:
 - You have access to the editor's scene tree via `EditorScript` or `get_tree()`
-- `EditorInterface` is available as a singleton via `Engine.get_singleton('EditorInterface')` for editor operations
+- `EditorInterface` is available via `executeContext.editor_plugin.get_editor_interface()` (preferred) or as a singleton via `Engine.get_singleton('EditorInterface')`
+- `executeContext.editor_plugin` provides the EditorPlugin instance itself for calling plugin-level APIs
 - The code runs on the main thread — avoid infinite loops or heavy computation
 - Changes to nodes/scenes are reflected in real-time in the editor
 
@@ -455,7 +457,7 @@ To prevent this, **always enable "Ignore Error Breaks" on the editor before exec
 Execute the following on the **editor** executor before your first game executor call:
 
 ```gdscript
-var ei = Engine.get_singleton('EditorInterface')
+var ei = executeContext.editor_plugin.get_editor_interface()
 var base = ei.get_base_control()
 
 var stack = [[base, 0]]
@@ -511,7 +513,7 @@ The debugger toolbar lives inside the "Stack Trace" tab's `HBoxContainer`. The k
 To resume a paused game, find the "Continue" button and emit `pressed`:
 
 ```gdscript
-var ei = Engine.get_singleton('EditorInterface')
+var ei = executeContext.editor_plugin.get_editor_interface()
 var base = ei.get_base_control()
 
 var stack = [[base, 0]]
@@ -558,8 +560,24 @@ func run():
 This means:
 - You're inside a `RefCounted` instance, not a `Node`
 - To access the scene tree, use `Engine.get_main_loop()` to get the `SceneTree`
-- To access editor functionality, you may need `EditorInterface` (if available as a singleton)
+- To access editor functionality, use `executeContext.editor_plugin` to get the EditorPlugin instance, or `EditorInterface` via singleton
 - `executeContext` is set as a property before `run()` is called
+
+### Accessing EditorPlugin from Snippets
+
+You can access the EditorPlugin instance directly via `executeContext.editor_plugin`:
+
+```gdscript
+var plugin = executeContext.editor_plugin
+var ei = plugin.get_editor_interface()
+executeContext.output("current_scene", str(ei.get_current_scene().name))
+```
+
+Common EditorPlugin APIs available through this reference:
+- `get_editor_interface()` — returns EditorInterface singleton
+- `get_undo_redo()` — returns the UndoRedo manager
+- `make_visible(bool)` — show/hide the plugin's dock
+- `get_plugin_name()` — the plugin's display name
 
 ### Accessing the Scene Tree from Snippets
 
@@ -569,6 +587,13 @@ Since snippets extend `RefCounted` (not `Node`), you need to access the scene tr
 var tree = Engine.get_main_loop() as SceneTree
 var root = tree.root
 var edited_scene = tree.edited_scene_root
+```
+
+Or use the EditorPlugin reference:
+
+```gdscript
+var ei = executeContext.editor_plugin.get_editor_interface()
+var edited_scene = ei.get_current_scene()
 ```
 
 ### Output Best Practices
