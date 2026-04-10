@@ -108,7 +108,7 @@ var is_playing = ei.is_playing_scene()
 executeContext.output("is_playing", str(is_playing))
 ```
 
-**2. Check if `game_executor.gd` is registered as an Autoload** — Read the `[autoload]` section from the project's `project.godot` file. There is no runtime API to list registered autoloads (`ProjectSettings.get_setting("autoload")` returns `null` in the editor). The `project.godot` file is located at the project root and contains autoload entries like:
+**2. Check if `game_executor.gd` is registered as an Autoload** — Read the `[autoload]` section from the project's `project.godot` file. There is no runtime API to list registered autoloads. The `project.godot` file is located at the project root and contains autoload entries like:
 
 ```ini
 [autoload]
