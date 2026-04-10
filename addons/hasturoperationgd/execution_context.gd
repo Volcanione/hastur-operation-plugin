@@ -2,11 +2,13 @@ class_name ExecutionContext
 extends RefCounted
 
 
+var editor_plugin = null
 var _outputs: Array = []
 var _max_output_length: int = 800
 
 
-func _init() -> void:
+func _init(p_editor_plugin = null) -> void:
+	editor_plugin = p_editor_plugin
 	_max_output_length = HasturOperationGDPluginSettings.get_output_max_char_length()
 
 

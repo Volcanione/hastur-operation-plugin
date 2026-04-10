@@ -15,7 +15,7 @@ func _notification(what: int) -> void:
 		_error_capturer = null
 
 
-func execute_code(code: String, execute_context: Dictionary = {}) -> Dictionary:
+func execute_code(code: String, execute_context: Dictionary = {}, editor_plugin = null) -> Dictionary:
 	var result = {
 		"compile_success": false,
 		"compile_error": "",
@@ -72,7 +72,7 @@ func execute_code(code: String, execute_context: Dictionary = {}) -> Dictionary:
 			result.run_error = "Failed to instantiate script"
 		return result
 
-	var ctx = ExecutionContext.new()
+	var ctx = ExecutionContext.new(editor_plugin)
 
 	_error_capturer.start_capture(script_path)
 	if is_full_class:

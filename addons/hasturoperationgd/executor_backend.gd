@@ -10,8 +10,13 @@ signal history_cleared()
 
 var _executor: GDScriptExecutor
 var _broker_client: BrokerClient
+var _editor_plugin = null
 var _history: Array = []
 var _max_history: int = 50
+
+
+func initialize(p_editor_plugin) -> void:
+	_editor_plugin = p_editor_plugin
 
 
 func _ready() -> void:
@@ -39,7 +44,7 @@ func _notification(what: int) -> void:
 
 func execute_code(code: String) -> Dictionary:
 	var start_time = Time.get_ticks_msec()
-	var result = _executor.execute_code(code)
+	var result = _executor.execute_code(code, {}, _editor_plugin)
 	var end_time = Time.get_ticks_msec()
 	var duration_ms = end_time - start_time
 	var entry = {

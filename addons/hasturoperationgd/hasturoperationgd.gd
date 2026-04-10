@@ -19,6 +19,7 @@ func _enter_tree() -> void:
 
 	_backend = ExecutorBackend.new()
 	add_child(_backend)
+	_backend.initialize(self)
 
 	_dock = EditorDock.new()
 	_dock.title = "Hastur Executor"
