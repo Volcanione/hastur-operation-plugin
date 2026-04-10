@@ -446,6 +446,102 @@ executeContext.output("current_scene", str(get_tree().current_scene.name))
 executeContext.output("child_count", str(get_tree().current_scene.get_child_count()))
 ```
 
+### Before Executing on Game: Enable Ignore Error Breaks (Critical)
+
+When you execute GDScript code on the game executor and that code causes a runtime error (invalid method call, null reference, etc.), Godot's built-in debugger will **automatically pause the entire game process**. This causes the executor request to time out (HTTP 504 after 30 seconds) because the game is frozen and cannot respond. Even worse, all subsequent game executor requests will also time out until the debugger is resumed.
+
+To prevent this, **always enable "Ignore Error Breaks" on the editor before executing code on the game executor.** This tells the debugger not to pause on script errors, allowing the game to continue running even if your code has bugs.
+
+Execute the following on the **editor** executor before your first game executor call:
+
+```gdscript
+var ei = Engine.get_singleton('EditorInterface')
+var base = ei.get_base_control()
+
+var stack = [[base, 0]]
+var toolbar = null
+while stack.size() > 0:
+	var pair = stack.pop_back()
+	var node = pair[0]
+	var depth = pair[1]
+	if toolbar != null:
+		break
+	if depth > 25:
+		continue
+	if node.name.find("Stack Trace") != -1 and node.get_class() == "VBoxContainer":
+		for child in node.get_children():
+			if child is HBoxContainer:
+				toolbar = child
+				break
+	for child in node.get_children():
+		stack.append([child, depth + 1])
+
+if toolbar != null:
+	for child in toolbar.get_children():
+		if child is Button and child.tooltip_text == "Ignore Error Breaks":
+			child.set_toggle_mode(true)
+			child.set_pressed(true)
+			child.emit_signal("pressed")
+			executeContext.output("ignore_error_breaks", "enabled")
+			break
+else:
+	executeContext.output("ignore_error_breaks", "toolbar not found")
+```
+
+**Why the complexity?** The "Ignore Error Breaks" button is a plain `Button` with `toggle_mode = false`. Simply calling `emit_signal("pressed")` or `set_pressed(true)` does nothing — the button ignores these calls when toggle mode is off. You must call `set_toggle_mode(true)` first, then `set_pressed(true)`, then `emit_signal("pressed")`.
+
+The code above dynamically discovers the button by walking the editor's scene tree, so it won't break if node paths change between sessions.
+
+### Controlling Game Pause/Resume from the Editor
+
+The editor's debugger toolbar provides buttons to control the game's execution state. These are useful when the game is paused by the debugger and you need to resume it.
+
+The debugger toolbar lives inside the "Stack Trace" tab's `HBoxContainer`. The key buttons (identified by their `tooltip_text`):
+
+| Tooltip | Function |
+|---------|----------|
+| Continue | Resume the game after a debugger pause |
+| Step Into | Step into the next function call |
+| Step Over | Step over the next line |
+| Step Out | Step out of the current function |
+| Break | Pause the game at the next opportunity |
+| Skip Breakpoints | Skip all breakpoints |
+| Ignore Error Breaks | Don't pause on script errors |
+
+To resume a paused game, find the "Continue" button and emit `pressed`:
+
+```gdscript
+var ei = Engine.get_singleton('EditorInterface')
+var base = ei.get_base_control()
+
+var stack = [[base, 0]]
+var toolbar = null
+while stack.size() > 0:
+	var pair = stack.pop_back()
+	var node = pair[0]
+	var depth = pair[1]
+	if toolbar != null:
+		break
+	if depth > 25:
+		continue
+	if node.name.find("Stack Trace") != -1 and node.get_class() == "VBoxContainer":
+		for child in node.get_children():
+			if child is HBoxContainer:
+				toolbar = child
+				break
+	for child in node.get_children():
+		stack.append([child, depth + 1])
+
+if toolbar != null:
+	for child in toolbar.get_children():
+		if child is Button and child.tooltip_text == "Continue":
+			child.emit_signal("pressed")
+			executeContext.output("continue", "pressed")
+			break
+```
+
+The "Continue" button is a non-toggle button, so `emit_signal("pressed")` works directly — no need for the `set_toggle_mode` workaround.
+
 ### Snippet Mode Details
 
 In snippet mode, your code is wrapped like this:

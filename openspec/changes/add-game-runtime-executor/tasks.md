@@ -21,7 +21,7 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Manually test: add `game_executor.gd` as Autoload, launch game from editor, verify game executor appears in `GET /api/executors` with `type: "game"`
-- [ ] 4.2 Manually test: execute code via `POST /api/execute` with `type: "game"` and verify code runs in game process context
-- [ ] 4.3 Manually test: stop the game, verify the game executor is removed from the broker's executor list without waiting for heartbeat timeout
-- [ ] 4.4 Verify existing editor executor functionality is unchanged (backward compatibility)
+- [x] 4.1 Manually test: add `game_executor.gd` as Autoload, launch game from editor, verify game executor appears in `GET /api/executors` with `type: "game"`
+- [x] 4.2 Manually test: execute code via `POST /api/execute` with `type: "game"` and verify code runs in game process context
+- [x] 4.3 Manually test: stop the game, verify the game executor is removed from the broker's executor list without waiting for heartbeat timeout
+- [x] 4.4 Verify existing editor executor functionality is unchanged (backward compatibility)
