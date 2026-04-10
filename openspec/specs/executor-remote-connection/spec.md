@@ -1,4 +1,4 @@
-## ADDED Requirements
+## Requirements
 
 ### Requirement: TCP client with auto-reconnect
 The Godot Hastur Executor SHALL implement a TCP client that connects to the broker-server. The client SHALL attempt to connect on startup and automatically reconnect with exponential backoff (1s, 2s, 4s, 8s, max 30s) if the connection is lost.
@@ -20,10 +20,14 @@ The Godot Hastur Executor SHALL implement a TCP client that connects to the brok
 - **THEN** the client SHALL send the registration message again and receive the same deterministic ID
 
 ### Requirement: Registration handshake
-Upon connecting, the Hastur Executor SHALL send a `register` message containing `project_name` (from ProjectSettings), `project_path` (from `ProjectSettings.globalize_path("res://")`), `editor_pid` (from `OS.get_process_id()`), `plugin_version` (from plugin.cfg), `editor_version` (from `Engine.get_version_info()`), and `supported_languages` (`["gdscript"]`).
+Upon connecting, the Hastur Executor SHALL send a `register` message containing `project_name` (from ProjectSettings), `project_path` (from `ProjectSettings.globalize_path("res://")`), `editor_pid` (from `OS.get_process_id()`), `plugin_version` (from plugin.cfg), `editor_version` (from `Engine.get_version_info()`), `supported_languages` (`["gdscript"]`), and `type` (`"editor"` for the editor plugin, `"game"` for the GameExecutor autoload).
 
-#### Scenario: Successful registration
-- **WHEN** the client sends a valid register message and the server responds with `{"type": "register_result", "data": {"success": true, "id": "<uuid>"}}`
+#### Scenario: Successful registration from editor
+- **WHEN** the editor plugin client sends a valid register message with `type: "editor"` and the server responds with `{"type": "register_result", "data": {"success": true, "id": "<uuid>"}}`
+- **THEN** the client SHALL store the registration ID and emit a connection established signal
+
+#### Scenario: Successful registration from game executor
+- **WHEN** the GameExecutor client sends a valid register message with `type: "game"` and the server responds with `{"type": "register_result", "data": {"success": true, "id": "<uuid>"}}`
 - **THEN** the client SHALL store the registration ID and emit a connection established signal
 
 #### Scenario: Registration failure
