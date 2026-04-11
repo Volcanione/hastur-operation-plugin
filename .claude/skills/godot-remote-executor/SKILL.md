@@ -332,7 +332,11 @@ The executor_id/project_name/project_path didn't match any connected editor. Run
 
 ### Timeout (HTTP 504)
 
-Code execution exceeded the 30-second limit. Simplify the code or break it into smaller steps.
+Code execution exceeded the 30-second limit. This has two common causes:
+
+**Cause 1: Debugger paused the game (most common for game executor).** When code on the game executor triggers a runtime error, Godot's debugger automatically pauses the game process. The game freezes, the request times out, and all subsequent game executor requests also hang. **Before investigating anything else, check whether "Ignore Error Breaks" is enabled** — see the "Before Executing on Game: Enable Ignore Error Breaks" section below. If the game is already paused, use the "Continue" button on the debugger toolbar (see "Controlling Game Pause/Resume from the Editor") to unfreeze it first, then enable Ignore Error Breaks.
+
+**Cause 2: Code genuinely takes too long.** The code has an infinite loop or heavy computation. Simplify the code or break it into smaller steps.
 
 ## Step 4: Look Up Godot APIs as Needed
 
@@ -452,9 +456,11 @@ executeContext.output("child_count", str(get_tree().current_scene.get_child_coun
 
 When you execute GDScript code on the game executor and that code causes a runtime error (invalid method call, null reference, etc.), Godot's built-in debugger will **automatically pause the entire game process**. This causes the executor request to time out (HTTP 504 after 30 seconds) because the game is frozen and cannot respond. Even worse, all subsequent game executor requests will also time out until the debugger is resumed.
 
-To prevent this, **always enable "Ignore Error Breaks" on the editor before executing code on the game executor.** This tells the debugger not to pause on script errors, allowing the game to continue running even if your code has bugs.
+To prevent this, **always check and enable "Ignore Error Breaks" on the editor before executing code on the game executor.** This tells the debugger not to pause on script errors, allowing the game to continue running even if your code has bugs.
 
-Execute the following on the **editor** executor before your first game executor call:
+**Always check before each game executor call**, not just the first one — the setting can be reset between sessions or by other editor actions.
+
+Execute the following on the **editor** executor before your game executor call. This code first checks whether Ignore Error Breaks is already enabled, and only toggles it if needed:
 
 ```gdscript
 var ei = executeContext.editor_plugin.get_editor_interface()
@@ -481,10 +487,13 @@ while stack.size() > 0:
 if toolbar != null:
 	for child in toolbar.get_children():
 		if child is Button and child.tooltip_text == "Ignore Error Breaks":
-			child.set_toggle_mode(true)
-			child.set_pressed(true)
-			child.emit_signal("pressed")
-			executeContext.output("ignore_error_breaks", "enabled")
+			if child.button_pressed:
+				executeContext.output("ignore_error_breaks", "already_enabled")
+			else:
+				child.set_toggle_mode(true)
+				child.set_pressed(true)
+				child.emit_signal("pressed")
+				executeContext.output("ignore_error_breaks", "enabled")
 			break
 else:
 	executeContext.output("ignore_error_breaks", "toolbar not found")
